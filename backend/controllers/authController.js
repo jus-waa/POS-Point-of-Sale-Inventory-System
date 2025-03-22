@@ -5,7 +5,7 @@ export const signupRoute = async (req, res) => {
     try {
         const { name, email, phone_number, password } = req.body;
 
-        // Debugging
+        // debugging password
         console.log("Received password:", password);
         // check if all fields have values
         if (!name || !email || !phone_number || !password) {
@@ -48,7 +48,7 @@ export const signupRoute = async (req, res) => {
             message: "User created successfully. OTP has been sent.",
             user: {
                 ...user,
-                password: undefined, // Hide password in response
+                password: undefined,
             },
         });
     } catch (err) {
