@@ -1,1 +1,1 @@
-# POS-Point-of-Sale-Inventory-System
+Point-of-Sale-Inventory-System
