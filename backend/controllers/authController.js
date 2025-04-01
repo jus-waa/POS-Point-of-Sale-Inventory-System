@@ -2,33 +2,9 @@ import db from "../db/index.js";
 import bcryptjs from "bcryptjs";
 import nodemailer from "nodemailer";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-
+import { sendVerificationEmail  } from "../emails/emails.js";
 //test for using EmailSMTP
-const sendOtp = async(email, phone_number, verificationToken) => {
-    const transporter = nodemailer.createTransport({
-        host: "live.smtp.mailtrap.io",
-        port: 587, //25(default), 587(secure mail submision), 465(SSL)
-        secure: false,
-        auth: {
-            user: "api",
-            pass: process.env.MAILTRAP_TOKEN,
-        },
-    });
 
-    const mailOptions = {
-        from: 'account@demomailtrap.co',
-        to: 'codesixteen016@gmail.com',
-        subject: 'Your OTP Code',
-        text: `Your OTP code is ${verificationToken}`
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log('OTP sent');
-    } catch (error) {
-        console.log('Erorr sending OTP:', error);
-    }
-};
 
 export const signupRoute = async (req, res) => {
     try {
@@ -73,6 +49,7 @@ export const signupRoute = async (req, res) => {
         // send OTP to email
         // await sendOtp(email, phone_number, verificationToken);
         await sendVerificationEmail(user.email, verificationToken);
+
         res.status(201).json({
             status: "success",
             message: "User created successfully. OTP has been sent.",
@@ -88,6 +65,10 @@ export const signupRoute = async (req, res) => {
             message: err.message,
         });
     }
+};
+
+export const verifyEmail = async (req, res) => {
+    const { verificationToken } = req.body;
 };
 
 export const loginRoute = async (req, res) => {
