@@ -1,12 +1,39 @@
 import db from "../db/index.js";
 import bcryptjs from "bcryptjs";
+import nodemailer from "nodemailer";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
+
+//test for using EmailSMTP
+const sendOtp = async(email, phone_number, verificationToken) => {
+    const transporter = nodemailer.createTransport({
+        host: "live.smtp.mailtrap.io",
+        port: 587, //25(default), 587(secure mail submision), 465(SSL)
+        secure: false,
+        auth: {
+            user: "api",
+            pass: process.env.MAILTRAP_TOKEN,
+        },
+    });
+
+    const mailOptions = {
+        from: 'account@demomailtrap.co',
+        to: 'codesixteen016@gmail.com',
+        subject: 'Your OTP Code',
+        text: `Your OTP code is ${verificationToken}`
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('OTP sent');
+    } catch (error) {
+        console.log('Erorr sending OTP:', error);
+    }
+};
+
 export const signupRoute = async (req, res) => {
     try {
         const { name, email, phone_number, password } = req.body;
 
-        // debugging password
-        console.log("Received password:", password);
         // check if all fields have values
         if (!name || !email || !phone_number || !password) {
             return res.status(400).json({
@@ -14,6 +41,7 @@ export const signupRoute = async (req, res) => {
                 message: "All fields are required.",
             });
         }
+
         // password and otp
         const hashedPassword = await bcryptjs.hash(password, 10);
         const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
@@ -34,7 +62,7 @@ export const signupRoute = async (req, res) => {
 
         // insert user into DB
         const insertUser =
-            "INSERT INTO users (name, email, phone_number, password, verificationToken, verificationTokenExpiresAt) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *";
+            "INSERT INTO users (name, email, phone_number, hashed_password, verification_token, verification_token_expires_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *";
         const valueUser = [name, email, phone_number, hashedPassword, verificationToken, verificationTokenExpiresAt];
 
         const results = await db.query(insertUser, valueUser);
@@ -42,7 +70,9 @@ export const signupRoute = async (req, res) => {
 
         // generate JWT token
         generateTokenAndSetCookie(res, user.id);
-
+        // send OTP to email
+        // await sendOtp(email, phone_number, verificationToken);
+        await sendVerificationEmail(user.email, verificationToken);
         res.status(201).json({
             status: "success",
             message: "User created successfully. OTP has been sent.",
